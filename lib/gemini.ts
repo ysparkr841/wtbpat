@@ -7,7 +7,7 @@ export async function generateBlogPost(
   input: WriteInput,
   profile: Profile
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const prompt = `
 당신은 블로그 글 작성 전문가입니다. 다음 정보를 바탕으로 네이버 블로그에 올릴 글을 작성해주세요.

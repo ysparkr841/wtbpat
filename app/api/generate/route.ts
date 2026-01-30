@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: { content } });
   } catch (error) {
     console.error('글 생성 오류:', error);
+    const errorMessage = error instanceof Error ? error.message : 'AI 글 생성 실패';
     return NextResponse.json(
-      { success: false, error: 'AI 글 생성 실패' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
