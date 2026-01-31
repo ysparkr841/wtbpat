@@ -286,7 +286,7 @@ function SettingsContent() {
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-gray-50 rounded-xl">
               <span className="text-sm text-gray-500">AI 모델</span>
-              <p className="font-semibold text-gray-900 mt-1">Gemini 1.5 Flash</p>
+              <p className="font-semibold text-gray-900 mt-1">Gemini 2.5 Flash</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl">
               <span className="text-sm text-gray-500">데이터 저장</span>
