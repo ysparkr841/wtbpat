@@ -1,25 +1,23 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient, getServerUser } from '@/lib/server-auth';
 
 export async function GET() {
   try {
-    // 프로필 ID 가져오기
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ success: true, connected: false });
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
     }
 
-    // 카카오 토큰 확인
+    const supabase = await createServerSupabaseClient();
+
+    // 카카오 토큰 확인 (user_id 기반)
     const { data: tokenData } = await supabase
       .from('kakao_tokens')
       .select('expires_at')
-      .eq('profile_id', profile.id)
+      .eq('user_id', user.id)
       .single();
 
     if (!tokenData) {

@@ -73,10 +73,10 @@ export async function sendKakaoMessage(
     object_type: 'text',
     text: message.length > 200 ? message.substring(0, 197) + '...' : message,
     link: {
-      web_url: 'https://blog.naver.com',
-      mobile_web_url: 'https://m.blog.naver.com',
+      web_url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      mobile_web_url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     },
-    button_title: '네이버 블로그 열기',
+    button_title: '글 관리하기',
   };
 
   const response = await fetch(

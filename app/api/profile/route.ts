@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { Profile } from '@/types';
+import { createServerSupabaseClient, getServerUser } from '@/lib/server-auth';
 
 // GET: 프로필 조회
 export async function GET() {
   try {
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .eq('user_id', user.id)
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -18,10 +26,11 @@ export async function GET() {
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('프로필 조회 오류:', error);
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
     return NextResponse.json(
-      { success: false, error: '프로필 조회 실패' },
+      { success: false, error: '프로필 조회 실패', details: errorMessage },
       { status: 500 }
     );
   }
@@ -30,14 +39,22 @@ export async function GET() {
 // POST: 프로필 저장/업데이트
 export async function POST(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
     const profile: Profile = await request.json();
+    const supabase = await createServerSupabaseClient();
 
     // 기존 프로필 확인
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('id')
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .eq('user_id', user.id)
       .single();
 
     let result;
@@ -55,6 +72,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', existingProfile.id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -65,6 +83,7 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase
         .from('profiles')
         .insert({
+          user_id: user.id,
           name: profile.name,
           job: profile.job,
           experience: profile.experience,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getKakaoToken } from '@/lib/kakao';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient, getServerUser } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -20,27 +20,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokenData = await getKakaoToken(code);
-
-    // 프로필 ID 가져오기
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!profile) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.redirect(
-        new URL('/profile?kakao=error&message=프로필없음', request.url)
+        new URL('/login?message=로그인필요', request.url)
       );
     }
 
-    // 기존 토큰 확인
+    const tokenData = await getKakaoToken(code);
+    const supabase = await createServerSupabaseClient();
+
+    // 기존 토큰 확인 (user_id 기반)
     const { data: existingToken } = await supabase
       .from('kakao_tokens')
       .select('id')
-      .eq('profile_id', profile.id)
+      .eq('user_id', user.id)
       .single();
 
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
@@ -54,11 +48,12 @@ export async function GET(request: NextRequest) {
           refresh_token: tokenData.refresh_token,
           expires_at: expiresAt,
         })
-        .eq('id', existingToken.id);
+        .eq('id', existingToken.id)
+        .eq('user_id', user.id);
     } else {
       // 새로 생성
       await supabase.from('kakao_tokens').insert({
-        profile_id: profile.id,
+        user_id: user.id,
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         expires_at: expiresAt,

@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendKakaoMessage, refreshKakaoToken } from '@/lib/kakao';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient, getServerUser } from '@/lib/server-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
     const { message } = await request.json();
 
     if (!message) {
@@ -13,26 +21,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 프로필 ID 가져오기
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    const supabase = await createServerSupabaseClient();
 
-    if (!profile) {
-      return NextResponse.json(
-        { success: false, error: '프로필이 없습니다.' },
-        { status: 400 }
-      );
-    }
-
-    // 카카오 토큰 가져오기
+    // 카카오 토큰 가져오기 (user_id 기반)
     const { data: tokenData } = await supabase
       .from('kakao_tokens')
       .select('*')
-      .eq('profile_id', profile.id)
+      .eq('user_id', user.id)
       .single();
 
     if (!tokenData) {
@@ -66,7 +61,8 @@ export async function POST(request: NextRequest) {
             refresh_token: newTokenData.refresh_token || tokenData.refresh_token,
             expires_at: expiresAt,
           })
-          .eq('id', tokenData.id);
+          .eq('id', tokenData.id)
+          .eq('user_id', user.id);
       } catch (error) {
         console.error('토큰 갱신 실패:', error);
         return NextResponse.json(

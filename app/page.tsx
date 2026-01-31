@@ -7,7 +7,6 @@ import { Profile, Post } from '@/types';
 export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [kakaoConnected, setKakaoConnected] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,10 +15,9 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const [profileRes, postsRes, kakaoRes] = await Promise.all([
+      const [profileRes, postsRes] = await Promise.all([
         fetch('/api/profile'),
         fetch('/api/posts'),
-        fetch('/api/kakao/status'),
       ]);
 
       if (profileRes.ok) {
@@ -31,11 +29,6 @@ export default function Dashboard() {
         const data = await postsRes.json();
         setPosts(data.data || []);
       }
-
-      if (kakaoRes.ok) {
-        const data = await kakaoRes.json();
-        setKakaoConnected(data.connected && !data.expired);
-      }
     } catch (error) {
       console.error('데이터 로드 실패:', error);
     } finally {
@@ -46,11 +39,7 @@ export default function Dashboard() {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-  const today = now.getDate();
 
-  // 이번 달 글 작성 여부
   const thisMonthPost = posts.find((post) => {
     const postDate = new Date(post.created_at!);
     return (
@@ -59,307 +48,157 @@ export default function Dashboard() {
     );
   });
 
-  // 월별 작성 통계 (최근 6개월)
-  const getMonthlyStats = () => {
-    const stats = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(currentYear, currentMonth - i, 1);
-      const monthPosts = posts.filter((post) => {
-        const postDate = new Date(post.created_at!);
-        return (
-          postDate.getMonth() === date.getMonth() &&
-          postDate.getFullYear() === date.getFullYear()
-        );
-      });
-      stats.push({
-        month: date.toLocaleDateString('ko-KR', { month: 'short' }),
-        count: monthPosts.length,
-        completed: monthPosts.length > 0,
-      });
-    }
-    return stats;
-  };
-
-  const monthlyStats = getMonthlyStats();
-
-  // 캘린더 날짜 배열 생성
-  const calendarDays = [];
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(null);
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    calendarDays.push(i);
-  }
-
-  // 글 작성한 날짜들
-  const postDates = posts
-    .filter((post) => {
-      const postDate = new Date(post.created_at!);
-      return (
-        postDate.getMonth() === currentMonth &&
-        postDate.getFullYear() === currentYear
-      );
-    })
-    .map((post) => new Date(post.created_at!).getDate());
+  // 추천 주제들
+  const suggestedTopics = [
+    '환자 소통 노하우',
+    '번아웃 극복기',
+    '보호자 상담 팁',
+    '신규 간호사 조언',
+  ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-teal-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            블로그 글 생성 도구 관리 시스템
-          </p>
+    <div className="max-w-xl mx-auto space-y-6 px-4">
+      {/* 캐릭터와 인사 */}
+      <div className="text-center pt-6">
+        <div className="inline-block mb-4 relative">
+          <div className="w-24 h-24 bg-gradient-to-br from-teal-100 via-cyan-100 to-emerald-100 rounded-[2rem] flex items-center justify-center shadow-lg">
+            <svg className="w-14 h-14" viewBox="0 0 100 100">
+              {/* 청진기 */}
+              <path d="M 30 35 Q 25 50 30 65 Q 35 80 50 85 Q 65 80 70 65 Q 75 50 70 35"
+                stroke="#0d9488" strokeWidth="4" fill="none" strokeLinecap="round"/>
+              <circle cx="50" cy="88" r="8" fill="#0d9488"/>
+              <circle cx="50" cy="88" r="5" fill="#5eead4"/>
+              {/* 이어피스 */}
+              <circle cx="30" cy="32" r="6" fill="#0d9488"/>
+              <circle cx="70" cy="32" r="6" fill="#0d9488"/>
+              <path d="M 30 32 Q 30 20 40 18" stroke="#0d9488" strokeWidth="3" fill="none" strokeLinecap="round"/>
+              <path d="M 70 32 Q 70 20 60 18" stroke="#0d9488" strokeWidth="3" fill="none" strokeLinecap="round"/>
+              {/* 펜 */}
+              <rect x="45" y="40" width="10" height="35" rx="2" fill="#14b8a6"/>
+              <polygon points="45,75 55,75 50,85" fill="#0f766e"/>
+              <rect x="45" y="40" width="10" height="8" fill="#0f766e"/>
+            </svg>
+          </div>
         </div>
-        <Link
-          href="/write"
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          + 새 글 생성
+        <h1 className="text-xl font-semibold text-gray-700 mb-1">
+          {profile ? `${profile.name} 선생님, 안녕하세요!` : '안녕하세요!'}
+        </h1>
+        <p className="text-gray-500 text-sm">오늘의 경험을 블로그에 담아보세요</p>
+      </div>
+
+      {/* 메인 CTA */}
+      <Link
+        href="/write"
+        className="block p-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-2xl text-white hover:from-teal-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-lg">이번 달 글 작성하기</p>
+            <p className="text-teal-50 text-sm mt-0.5">AI가 전문적인 글로 다듬어드려요</p>
+          </div>
+          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </div>
+        </div>
+      </Link>
+
+      {/* 이번 달 상태 */}
+      <div className={`p-4 rounded-xl ${thisMonthPost ? 'bg-teal-50 border border-teal-200' : 'bg-amber-50 border border-amber-200'}`}>
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{thisMonthPost ? '🎉' : '📝'}</span>
+          <div>
+            <p className={`font-medium text-sm ${thisMonthPost ? 'text-teal-700' : 'text-amber-700'}`}>
+              {currentMonth + 1}월 {thisMonthPost ? '글 작성 완료!' : '아직 글을 안 썼어요'}
+            </p>
+            <p className={`text-xs ${thisMonthPost ? 'text-teal-600' : 'text-amber-600'}`}>
+              {thisMonthPost ? thisMonthPost.topic : '환자분들께 도움이 되는 글을 남겨보세요'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 추천 주제 */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+          <span>💡</span> 이런 주제는 어때요?
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {suggestedTopics.map((topic) => (
+            <Link
+              key={topic}
+              href={`/write?topic=${encodeURIComponent(topic)}`}
+              className="px-3 py-1.5 bg-teal-50 text-teal-700 text-sm rounded-lg hover:bg-teal-100 transition-colors"
+            >
+              {topic}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* 통계 */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white p-4 rounded-xl border border-gray-100">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">📚</span>
+            <span className="text-xs text-gray-500">총 작성</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-800">{posts.length}<span className="text-sm font-normal text-gray-400 ml-1">건</span></p>
+        </div>
+        <Link href="/profile" className="bg-white p-4 rounded-xl border border-gray-100 hover:border-teal-300 transition-colors">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">🩺</span>
+            <span className="text-xs text-gray-500">내 프로필</span>
+          </div>
+          <p className="font-medium text-gray-800 truncate">{profile ? profile.name : '설정하기'}</p>
         </Link>
       </div>
 
-      {/* 상태 카드 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">프로필</div>
-          <div className="mt-2 flex items-center">
-            <span
-              className={`w-2 h-2 rounded-full mr-2 ${
-                profile ? 'bg-green-500' : 'bg-yellow-500'
-              }`}
-            ></span>
-            <span className="text-sm font-medium">
-              {profile ? '설정 완료' : '미설정'}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">이번 달</div>
-          <div className="mt-2 flex items-center">
-            <span
-              className={`w-2 h-2 rounded-full mr-2 ${
-                thisMonthPost ? 'bg-green-500' : 'bg-red-500'
-              }`}
-            ></span>
-            <span className="text-sm font-medium">
-              {thisMonthPost ? '작성 완료' : '미작성'}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">총 작성</div>
-          <div className="mt-2">
-            <span className="text-2xl font-bold text-gray-900">{posts.length}</span>
-            <span className="text-sm text-gray-500 ml-1">건</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">카카오톡</div>
-          <div className="mt-2 flex items-center">
-            <span
-              className={`w-2 h-2 rounded-full mr-2 ${
-                kakaoConnected ? 'bg-green-500' : 'bg-gray-400'
-              }`}
-            ></span>
-            <span className="text-sm font-medium">
-              {kakaoConnected ? '연동됨' : '미연동'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* 캘린더 */}
-        <div className="lg:col-span-2 bg-white rounded-lg border p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">
-              {currentYear}년 {currentMonth + 1}월
-            </h2>
-            <div className="flex items-center text-xs text-gray-500">
-              <span className="w-3 h-3 bg-blue-500 rounded mr-1"></span>
-              작성일
-              <span className="w-3 h-3 bg-gray-200 rounded ml-3 mr-1"></span>
-              오늘
-            </div>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center">
-            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-              <div key={day} className="text-xs font-medium text-gray-500 py-2">
-                {day}
-              </div>
-            ))}
-            {calendarDays.map((day, index) => (
-              <div
-                key={index}
-                className={`aspect-square flex items-center justify-center text-sm rounded ${
-                  day === null
-                    ? ''
-                    : postDates.includes(day)
-                    ? 'bg-blue-500 text-white font-medium'
-                    : day === today
-                    ? 'bg-gray-200 font-medium'
-                    : 'hover:bg-gray-50'
-                }`}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {!thisMonthPost && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                ⚠️ 이번 달 아직 글을 작성하지 않았습니다.
-                {today >= 25 && ' 월말이 다가오고 있어요!'}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* 월별 통계 */}
-        <div className="bg-white rounded-lg border p-4">
-          <h2 className="font-semibold text-gray-900 mb-4">월별 작성 현황</h2>
-          <div className="space-y-3">
-            {monthlyStats.map((stat, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{stat.month}</span>
-                <div className="flex items-center">
-                  <div className="w-24 h-2 bg-gray-100 rounded-full mr-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        stat.completed ? 'bg-blue-500' : 'bg-gray-300'
-                      }`}
-                      style={{ width: stat.completed ? '100%' : '0%' }}
-                    ></div>
-                  </div>
-                  <span
-                    className={`text-xs font-medium ${
-                      stat.completed ? 'text-blue-600' : 'text-gray-400'
-                    }`}
-                  >
-                    {stat.count}건
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 pt-4 border-t">
-            <div className="text-xs text-gray-500">작성률</div>
-            <div className="text-2xl font-bold text-gray-900">
-              {Math.round(
-                (monthlyStats.filter((s) => s.completed).length / 6) * 100
-              )}
-              %
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 빠른 작업 */}
-      <div className="bg-white rounded-lg border p-4">
-        <h2 className="font-semibold text-gray-900 mb-4">빠른 작업</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link
-            href="/write"
-            className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-700">글 생성</span>
-          </Link>
-
-          <Link
-            href="/history"
-            className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-700">작업 이력</span>
-          </Link>
-
-          <Link
-            href="/profile"
-            className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-700">설정</span>
-          </Link>
-
-          <a
-            href="https://blog.naver.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-700">네이버 블로그</span>
-          </a>
-        </div>
-      </div>
-
-      {/* 최근 작업 로그 */}
+      {/* 최근 글 */}
       {posts.length > 0 && (
-        <div className="bg-white rounded-lg border">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">최근 작업 로그</h2>
-            <Link href="/history" className="text-sm text-blue-600 hover:text-blue-700">
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-medium text-gray-700 text-sm">최근 작성한 글</h2>
+            <Link href="/history" className="text-xs text-teal-600 hover:text-teal-700">
               전체 보기
             </Link>
           </div>
-          <div className="divide-y">
-            {posts.slice(0, 5).map((post) => (
-              <div key={post.id} className="px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{post.topic}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(post.created_at!).toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
+          <div className="space-y-2">
+            {posts.slice(0, 3).map((post) => (
+              <div key={post.id} className="bg-white p-3 rounded-lg border border-gray-100 flex items-center gap-3">
+                <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-700 text-sm truncate">{post.topic}</p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(post.created_at!).toLocaleDateString('ko-KR', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
                 </div>
-                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">완료</span>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* 팁 카드 */}
+      <div className="bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl p-4 border border-teal-100">
+        <p className="text-sm text-teal-800 font-medium mb-1">💬 글쓰기 팁</p>
+        <p className="text-xs text-teal-700">
+          실제 경험을 바탕으로 쓰면 더 진정성 있는 글이 됩니다.
+          환자분과의 에피소드나 동료와의 협업 경험을 담아보세요.
+        </p>
+      </div>
     </div>
   );
 }

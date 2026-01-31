@@ -1,17 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Profile, WriteInput } from '@/types';
 
-export default function WritePage() {
+const suggestedTopics = [
+  { title: '환자 소통', desc: '효과적인 환자 상담 노하우' },
+  { title: '번아웃 극복', desc: '간호사의 마음 건강 지키기' },
+  { title: '보호자 상담', desc: '보호자와의 신뢰 쌓기' },
+  { title: '신규 간호사', desc: '선배로서 전하는 조언' },
+  { title: '팀워크', desc: '병동에서의 협업 이야기' },
+  { title: '자기계발', desc: '간호사의 성장 스토리' },
+];
+
+function WritePageContent() {
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [generatedContent, setGeneratedContent] = useState('');
   const [currentInput, setCurrentInput] = useState<WriteInput>({
     topic: '',
-    positiveExperience: '',
-    negativeExperience: '',
-    improvement: '',
+    monthlyEvent: '',
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -19,12 +28,18 @@ export default function WritePage() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [profileLoading, setProfileLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [step, setStep] = useState(1); // 1: 입력, 2: 결과
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
     fetchProfile();
     checkKakaoStatus();
-  }, []);
+
+    // URL 파라미터에서 topic 가져오기
+    const topic = searchParams.get('topic');
+    if (topic) {
+      setCurrentInput(prev => ({ ...prev, topic }));
+    }
+  }, [searchParams]);
 
   const fetchProfile = async () => {
     try {
@@ -112,14 +127,12 @@ export default function WritePage() {
         body: JSON.stringify({
           topic: currentInput.topic,
           content: generatedContent,
-          positive_experience: currentInput.positiveExperience,
-          negative_experience: currentInput.negativeExperience,
-          improvement: currentInput.improvement,
+          monthly_event: currentInput.monthlyEvent,
         }),
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: '작업 이력에 저장되었습니다.' });
+        setMessage({ type: 'success', text: '저장되었습니다!' });
       } else {
         setMessage({ type: 'error', text: '저장 중 오류가 발생했습니다.' });
       }
@@ -139,7 +152,7 @@ export default function WritePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `[블로그 글 생성 완료]\n\n주제: ${currentInput?.topic}\n\n글이 생성되었습니다. 네이버 블로그에 붙여넣기해주세요!`,
+          message: `[블로그 글 생성 완료]\n\n주제: ${currentInput?.topic}\n\n글이 생성되었습니다. 블로그에 붙여넣기해주세요!`,
         }),
       });
 
@@ -165,177 +178,173 @@ export default function WritePage() {
   if (profileLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-teal-500 border-t-transparent"></div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="bg-white rounded-lg border p-8 text-center">
-        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+      <div className="max-w-xl mx-auto px-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🩺</span>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">프로필 설정이 필요해요</h2>
+          <p className="text-gray-500 text-sm mb-6">
+            AI가 선생님의 스타일에 맞는 글을 작성하려면<br/>프로필 정보가 필요합니다
+          </p>
+          <Link
+            href="/profile"
+            className="inline-flex items-center px-5 py-2.5 bg-teal-500 text-white font-medium rounded-xl hover:bg-teal-600 transition-colors"
+          >
+            프로필 설정하기
+          </Link>
         </div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">프로필 설정 필요</h2>
-        <p className="text-gray-500 mb-4">
-          AI가 글을 생성하려면 작성자 정보가 필요합니다.
-        </p>
-        <Link
-          href="/profile"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-        >
-          프로필 설정하기
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-xl mx-auto px-4 space-y-6">
       {/* 헤더 */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">글 생성 도구</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          글감을 입력하면 AI가 블로그 글을 생성합니다
+      <div className="text-center pt-2">
+        <h1 className="text-xl font-semibold text-gray-800">블로그 글 작성</h1>
+        <p className="text-gray-500 text-sm mt-1">
+          주제만 입력하면 AI가 전문적인 글로 다듬어드려요
         </p>
       </div>
 
       {/* 단계 표시 */}
-      <div className="flex items-center space-x-4">
-        <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-            step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'
+      <div className="flex items-center gap-3 px-2">
+        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-teal-600' : 'text-gray-400'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            step >= 1 ? 'bg-teal-500 text-white' : 'bg-gray-100'
           }`}>
             1
           </div>
-          <span className="ml-2 text-sm font-medium">입력</span>
+          <span className="text-sm font-medium">글감 입력</span>
         </div>
-        <div className="flex-1 h-px bg-gray-200"></div>
-        <div className={`flex items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-            step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'
+        <div className="flex-1 h-0.5 bg-gray-100 rounded">
+          <div className={`h-full bg-teal-500 transition-all duration-300 ${step >= 2 ? 'w-full' : 'w-0'}`}></div>
+        </div>
+        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-teal-600' : 'text-gray-400'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            step >= 2 ? 'bg-teal-500 text-white' : 'bg-gray-100'
           }`}>
             2
           </div>
-          <span className="ml-2 text-sm font-medium">결과</span>
+          <span className="text-sm font-medium">결과 확인</span>
         </div>
       </div>
 
       {message.text && (
-        <div
-          className={`p-3 rounded-lg text-sm ${
-            message.type === 'error'
-              ? 'bg-red-50 text-red-700 border border-red-200'
-              : 'bg-green-50 text-green-700 border border-green-200'
-          }`}
-        >
+        <div className={`p-3 rounded-xl text-sm ${
+          message.type === 'error'
+            ? 'bg-red-50 text-red-700 border border-red-100'
+            : 'bg-teal-50 text-teal-700 border border-teal-100'
+        }`}>
           {message.text}
         </div>
       )}
 
       {step === 1 ? (
-        /* 입력 단계 */
-        <div className="bg-white rounded-lg border">
-          <div className="px-4 py-3 border-b">
-            <h2 className="font-semibold text-gray-900">글감 입력</h2>
+        <div className="space-y-4">
+          {/* 추천 주제 */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <p className="text-sm font-medium text-gray-700 mb-3">추천 주제</p>
+            <div className="grid grid-cols-2 gap-2">
+              {suggestedTopics.map((topic) => (
+                <button
+                  key={topic.title}
+                  onClick={() => setCurrentInput({ ...currentInput, topic: topic.title })}
+                  className={`p-3 rounded-lg text-left transition-colors ${
+                    currentInput.topic === topic.title
+                      ? 'bg-teal-50 border-2 border-teal-300'
+                      : 'bg-gray-50 border border-gray-100 hover:bg-teal-50'
+                  }`}
+                >
+                  <p className="font-medium text-gray-800 text-sm">{topic.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{topic.desc}</p>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="p-4 space-y-4">
+
+          {/* 입력 폼 */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                주제 / 키워드 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                주제 또는 키워드 <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={currentInput.topic}
                 onChange={(e) => setCurrentInput({ ...currentInput, topic: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: 간호 상담에서 경청의 중요성"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                placeholder="예: 환자와의 소통에서 배운 점"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                긍정적 경험
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                이번 달 경험 <span className="text-gray-400 font-normal">(선택)</span>
               </label>
               <textarea
-                value={currentInput.positiveExperience}
-                onChange={(e) => setCurrentInput({ ...currentInput, positiveExperience: e.target.value })}
+                value={currentInput.monthlyEvent}
+                onChange={(e) => setCurrentInput({ ...currentInput, monthlyEvent: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="이번 달에 있었던 좋았던 경험이나 성과"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all resize-none"
+                placeholder="예: 이번 달에 있었던 환자분과의 에피소드, 동료와의 협업 경험 등을 적어주시면 더 생생한 글이 됩니다."
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                어려웠던 점
-              </label>
-              <textarea
-                value={currentInput.negativeExperience}
-                onChange={(e) => setCurrentInput({ ...currentInput, negativeExperience: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="이번 달에 어려웠거나 아쉬웠던 점"
-              />
-            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={loading || !currentInput.topic}
+              className="w-full py-3.5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-medium rounded-xl hover:from-rose-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  AI가 글을 작성하고 있어요...
+                </span>
+              ) : (
+                '글 생성하기'
+              )}
+            </button>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                개선하고 싶은 점
-              </label>
-              <textarea
-                value={currentInput.improvement}
-                onChange={(e) => setCurrentInput({ ...currentInput, improvement: e.target.value })}
-                rows={2}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="앞으로 개선하거나 시도해보고 싶은 것"
-              />
-            </div>
-
-            <div className="pt-2">
-              <button
-                onClick={handleGenerate}
-                disabled={loading || !currentInput.topic}
-                className="w-full py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    AI가 글을 생성 중입니다...
-                  </span>
-                ) : (
-                  '글 생성하기'
-                )}
-              </button>
-            </div>
+          {/* 팁 */}
+          <div className="bg-teal-50 rounded-xl p-4 border border-teal-100">
+            <p className="text-sm text-teal-800">
+              <span className="font-medium">💡 Tip:</span> 실제 경험을 담으면 더 진정성 있는 글이 됩니다.
+              환자분과의 대화, 업무 중 느낀 점 등을 자유롭게 적어보세요.
+            </p>
           </div>
         </div>
       ) : (
         /* 결과 단계 */
         <div className="space-y-4">
-          {/* 도구 바 */}
-          <div className="bg-white rounded-lg border p-3 flex items-center justify-between">
+          {/* 액션 버튼 */}
+          <div className="flex items-center justify-between">
             <button
               onClick={handleReset}
-              className="flex items-center text-sm text-gray-600 hover:text-gray-900"
+              className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm font-medium"
             >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               다시 작성
             </button>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleCopy}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                  copied
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  copied ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {copied ? '복사됨!' : '복사'}
@@ -343,64 +352,47 @@ export default function WritePage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:bg-gray-100 disabled:text-gray-400"
+                className="px-3 py-1.5 text-sm font-medium bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 disabled:opacity-50"
               >
                 {saving ? '저장 중...' : '저장'}
               </button>
-              {kakaoConnected && (
-                <button
-                  onClick={handleSendKakao}
-                  className="px-3 py-1.5 text-sm font-medium bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200"
-                >
-                  카카오톡
-                </button>
-              )}
-              <a
-                href="https://blog.naver.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
-              >
-                네이버 블로그
-              </a>
             </div>
           </div>
 
           {/* 생성된 글 */}
-          <div className="bg-white rounded-lg border">
-            <div className="px-4 py-3 border-b flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900">생성된 글</h2>
-              <span className="text-xs text-gray-500">
-                {generatedContent.length.toLocaleString()}자
-              </span>
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <span className="font-medium text-gray-700 text-sm">생성된 글</span>
+              <span className="text-xs text-gray-500">{generatedContent.length.toLocaleString()}자</span>
             </div>
-            <div className="p-4">
-              <textarea
-                value={generatedContent}
-                onChange={(e) => setGeneratedContent(e.target.value)}
-                className="w-full h-96 p-3 border rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-            </div>
+            <textarea
+              value={generatedContent}
+              onChange={(e) => setGeneratedContent(e.target.value)}
+              className="w-full h-80 p-4 text-sm leading-relaxed focus:outline-none resize-none"
+            />
           </div>
 
-          {/* 입력 정보 요약 */}
-          <div className="bg-gray-50 rounded-lg border p-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">입력 정보</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">주제:</span>
-                <span className="ml-2 text-gray-900">{currentInput.topic}</span>
-              </div>
-              {currentInput.positiveExperience && (
-                <div>
-                  <span className="text-gray-500">긍정적 경험:</span>
-                  <span className="ml-2 text-gray-900">{currentInput.positiveExperience.slice(0, 50)}...</span>
-                </div>
-              )}
-            </div>
+          {/* 입력 정보 */}
+          <div className="bg-gray-50 rounded-xl p-4 text-sm">
+            <p className="text-gray-500 mb-1">주제: <span className="text-gray-700">{currentInput.topic}</span></p>
+            {currentInput.monthlyEvent && (
+              <p className="text-gray-500">경험: <span className="text-gray-700">{currentInput.monthlyEvent}</span></p>
+            )}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+export default function WritePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-teal-500 border-t-transparent"></div>
+      </div>
+    }>
+      <WritePageContent />
+    </Suspense>
   );
 }

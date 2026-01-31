@@ -1,21 +1,32 @@
 // 프로필 타입
 export interface Profile {
   id?: string;
+  user_id?: string;
   name: string;
   job: string;
   experience: string;
   blog_style: string;
   additional_info: string;
+  avatar_url?: string;
+  is_admin?: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+// 사용자 생성 요청 타입 (관리자용)
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  name: string;
 }
 
 // 글 작성 입력 타입
 export interface WriteInput {
   topic: string;
-  positiveExperience: string;
-  negativeExperience: string;
-  improvement: string;
+  monthlyEvent?: string;  // 이번 달에 있던 일 (간소화)
+  positiveExperience?: string;
+  negativeExperience?: string;
+  improvement?: string;
 }
 
 // 저장된 글 타입
@@ -24,9 +35,11 @@ export interface Post {
   profile_id?: string;
   topic: string;
   content: string;
-  positive_experience: string;
-  negative_experience: string;
-  improvement: string;
+  monthly_event?: string;  // 이번 달에 있던 일
+  // 하위 호환성을 위해 유지
+  positive_experience?: string;
+  negative_experience?: string;
+  improvement?: string;
   created_at?: string;
 }
 
@@ -50,9 +63,7 @@ export interface ApiResponse<T> {
 // 글 생성 요청 타입
 export interface GenerateRequest {
   topic: string;
-  positiveExperience: string;
-  negativeExperience: string;
-  improvement: string;
+  monthlyEvent: string;
   profile: Profile;
 }
 
