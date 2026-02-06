@@ -8,6 +8,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [copied, setCopied] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -34,6 +35,31 @@ export default function HistoryPage() {
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('복사 실패:', error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 이 글을 삭제하시겠습니까?')) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/posts?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setPosts(posts.filter((post) => post.id !== id));
+        if (selectedPost?.id === id) {
+          setSelectedPost(null);
+        }
+      } else {
+        alert('삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('삭제 실패:', error);
+      alert('삭제에 실패했습니다.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -141,16 +167,25 @@ export default function HistoryPage() {
                       {formatDate(selectedPost.created_at!)} {formatTime(selectedPost.created_at!)}
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleCopy(selectedPost.content)}
-                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
-                      copied
-                        ? 'bg-teal-100 text-teal-700'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {copied ? '복사 완료!' : '복사'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleCopy(selectedPost.content)}
+                      className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+                        copied
+                          ? 'bg-teal-100 text-teal-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {copied ? '복사 완료!' : '복사'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(selectedPost.id!)}
+                      disabled={deleting}
+                      className="px-4 py-2 text-sm font-medium rounded-xl transition-all bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50"
+                    >
+                      {deleting ? '삭제 중...' : '삭제'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* 입력 정보 */}

@@ -32,6 +32,46 @@ export async function GET() {
   }
 }
 
+// DELETE: 글 삭제
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getServerUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: '삭제할 글 ID가 필요합니다.' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('글 삭제 오류:', error);
+    return NextResponse.json(
+      { success: false, error: '글 삭제 실패' },
+      { status: 500 }
+    );
+  }
+}
+
 // POST: 글 저장
 export async function POST(request: NextRequest) {
   try {

@@ -14,8 +14,31 @@ export async function generateBlogPost(
 
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
+  // 현재 날짜 정보 생성
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+
+  // 계절 판단
+  let season = '';
+  if (month >= 3 && month <= 5) {
+    season = '봄';
+  } else if (month >= 6 && month <= 8) {
+    season = '여름';
+  } else if (month >= 9 && month <= 11) {
+    season = '가을';
+  } else {
+    season = '겨울';
+  }
+
   const prompt = `
 당신은 블로그 글 작성 전문가입니다. 다음 정보를 바탕으로 네이버 블로그에 올릴 글을 작성해주세요.
+
+## 오늘 날짜
+- 현재 날짜: ${year}년 ${month}월 ${day}일
+- 현재 계절: ${season}
+- 참고: 현재 한국은 ${season}이며, ${month === 12 || month <= 2 ? '영하의 추운 날씨' : month >= 6 && month <= 8 ? '무더운 날씨' : '선선한 날씨'}입니다.
 
 ## 작성자 정보
 - 이름: ${profile.name}
@@ -36,6 +59,7 @@ export async function generateBlogPost(
 5. 글 길이는 1500~2000자 정도로 작성해주세요.
 6. 네이버 블로그에 바로 붙여넣기 할 수 있는 형식으로 작성해주세요.
 7. 이번 달에 있었던 일을 자연스럽게 녹여서 작성해주세요.
+8. 첫 인사로는 위에 명시된 "오늘 날짜" 정보를 반드시 참고하여 현재 계절과 날씨에 맞는 인사말을 작성해주세요.
 
 블로그 글을 작성해주세요:
 `;
