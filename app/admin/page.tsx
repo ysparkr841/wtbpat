@@ -84,6 +84,35 @@ export default function AdminPage() {
     }
   };
 
+  const handleChangePassword = async (userId: string, userName: string) => {
+    const newPassword = prompt(`"${userName}" 사용자의 새 비밀번호를 입력하세요 (최소 6자):`);
+
+    if (!newPassword) return;
+
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', text: '비밀번호는 최소 6자 이상이어야 합니다.' });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/users/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, newPassword }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage({ type: 'success', text: '비밀번호가 변경되었습니다.' });
+      } else {
+        setMessage({ type: 'error', text: data.error || '비밀번호 변경에 실패했습니다.' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '비밀번호 변경 중 오류가 발생했습니다.' });
+    }
+  };
+
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (!confirm(`정말 "${userName}" 사용자를 삭제하시겠습니까?\n모든 데이터가 삭제됩니다.`)) {
       return;
@@ -278,17 +307,30 @@ export default function AdminPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-400">{formatDate(u.created_at)}</span>
-                  {u.id !== user?.id && !u.is_admin && (
-                    <button
-                      onClick={() => handleDeleteUser(u.id, u.name)}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                      title="삭제"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {!u.is_admin && (
+                      <button
+                        onClick={() => handleChangePassword(u.id, u.name)}
+                        className="p-2 text-gray-400 hover:text-teal-500 transition-colors"
+                        title="비밀번호 변경"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                      </button>
+                    )}
+                    {u.id !== user?.id && !u.is_admin && (
+                      <button
+                        onClick={() => handleDeleteUser(u.id, u.name)}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        title="삭제"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

@@ -18,9 +18,12 @@
 GEMINI_API_KEY=your_gemini_api_key
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 KAKAO_REST_API_KEY=your_kakao_rest_api_key
 KAKAO_REDIRECT_URI=http://localhost:3000/api/auth/kakao/callback
 ```
+
+**주의:** `SUPABASE_SERVICE_ROLE_KEY`는 관리자 권한이 있는 비밀 키입니다. 절대 클라이언트 코드에 노출하거나 Git에 커밋하지 마세요!
 
 ### 2. Supabase 테이블 생성
 ```sql
@@ -51,11 +54,12 @@ CREATE TABLE posts (
 -- kakao_tokens 테이블
 CREATE TABLE kakao_tokens (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  profile_id UUID REFERENCES profiles(id),
+  user_id UUID NOT NULL,
   access_token TEXT NOT NULL,
   refresh_token TEXT,
   expires_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT kakao_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 ```
 
