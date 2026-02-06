@@ -33,7 +33,9 @@ export async function getKakaoToken(code: string): Promise<{
   });
 
   if (!response.ok) {
-    throw new Error('카카오 토큰 발급 실패');
+    const errorData = await response.json();
+    console.error('카카오 토큰 발급 실패:', response.status, errorData);
+    throw new Error(`카카오 토큰 발급 실패: ${errorData.error_description || errorData.error || response.status}`);
   }
 
   return response.json();

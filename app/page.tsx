@@ -36,16 +36,29 @@ export default function Dashboard() {
     }
   };
 
+  // 매월 21일 기준으로 작성 완료 여부 체크
   const now = new Date();
+  const currentDay = now.getDate();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
+  // 21일 기준 기간 계산 (예: 2월 21일 ~ 3월 20일)
+  let periodStart: Date;
+  let periodEnd: Date;
+
+  if (currentDay >= 21) {
+    // 이번 달 21일 ~ 다음 달 20일
+    periodStart = new Date(currentYear, currentMonth, 21);
+    periodEnd = new Date(currentYear, currentMonth + 1, 20, 23, 59, 59);
+  } else {
+    // 지난 달 21일 ~ 이번 달 20일
+    periodStart = new Date(currentYear, currentMonth - 1, 21);
+    periodEnd = new Date(currentYear, currentMonth, 20, 23, 59, 59);
+  }
+
   const thisMonthPost = posts.find((post) => {
     const postDate = new Date(post.created_at!);
-    return (
-      postDate.getMonth() === currentMonth &&
-      postDate.getFullYear() === currentYear
-    );
+    return postDate >= periodStart && postDate <= periodEnd;
   });
 
   // 추천 주제들
@@ -128,7 +141,10 @@ export default function Dashboard() {
           <span className="text-2xl">{thisMonthPost ? '🎉' : '📝'}</span>
           <div>
             <p className={`font-medium text-sm ${thisMonthPost ? 'text-teal-700' : 'text-amber-700'}`}>
-              {currentMonth + 1}월 {thisMonthPost ? '글 작성 완료!' : '아직 글을 안 썼어요'}
+              {currentDay >= 21 ? currentMonth + 1 : currentMonth}월 {thisMonthPost ? '글 작성 완료!' : '아직 글을 안 썼어요'}
+              <span className="text-xs opacity-70 ml-1">
+                ({periodStart.getMonth() + 1}/{periodStart.getDate()}~{periodEnd.getMonth() + 1}/{periodEnd.getDate()})
+              </span>
             </p>
             <p className={`text-xs ${thisMonthPost ? 'text-teal-600' : 'text-amber-600'}`}>
               {thisMonthPost ? thisMonthPost.topic : '환자분들께 도움이 되는 글을 남겨보세요'}

@@ -10,7 +10,7 @@ const suggestedTopics = [
   { title: '번아웃 극복', desc: '간호사의 마음 건강 지키기' },
   { title: '보호자 상담', desc: '보호자와의 신뢰 쌓기' },
   { title: '신규 간호사', desc: '선배로서 전하는 조언' },
-  { title: '팀워크', desc: '병동에서의 협업 이야기' },
+  { title: '팀워크', desc: '병원에서의 협업 이야기' },
   { title: '자기계발', desc: '간호사의 성장 스토리' },
 ];
 
@@ -356,6 +356,17 @@ function WritePageContent() {
               >
                 {saving ? '저장 중...' : '저장'}
               </button>
+              {kakaoConnected && (
+                <button
+                  onClick={handleSendKakao}
+                  className="px-3 py-1.5 text-sm font-medium bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
+                  </svg>
+                  카톡 전송
+                </button>
+              )}
             </div>
           </div>
 
