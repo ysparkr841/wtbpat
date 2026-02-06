@@ -70,23 +70,33 @@ export default function Dashboard() {
       <div className="text-center pt-6">
         <div className="inline-block mb-4 relative">
           <div className="w-24 h-24 bg-gradient-to-br from-teal-100 via-cyan-100 to-emerald-100 rounded-[2rem] flex items-center justify-center shadow-lg">
-            <svg className="w-14 h-14" viewBox="0 0 100 100">
-              {/* 청진기 */}
-              <path d="M 30 35 Q 25 50 30 65 Q 35 80 50 85 Q 65 80 70 65 Q 75 50 70 35"
-                stroke="#0d9488" strokeWidth="4" fill="none" strokeLinecap="round"/>
-              <circle cx="50" cy="88" r="8" fill="#0d9488"/>
-              <circle cx="50" cy="88" r="5" fill="#5eead4"/>
-              {/* 이어피스 */}
-              <circle cx="30" cy="32" r="6" fill="#0d9488"/>
-              <circle cx="70" cy="32" r="6" fill="#0d9488"/>
-              <path d="M 30 32 Q 30 20 40 18" stroke="#0d9488" strokeWidth="3" fill="none" strokeLinecap="round"/>
-              <path d="M 70 32 Q 70 20 60 18" stroke="#0d9488" strokeWidth="3" fill="none" strokeLinecap="round"/>
-              {/* 펜 */}
-              <rect x="45" y="40" width="10" height="35" rx="2" fill="#14b8a6"/>
-              <polygon points="45,75 55,75 50,85" fill="#0f766e"/>
-              <rect x="45" y="40" width="10" height="8" fill="#0f766e"/>
+            <svg className="w-20 h-20" viewBox="0 0 100 100">
+              {/* 얼굴 */}
+              <circle cx="50" cy="52" r="28" fill="#FFE4C9"/>
+              {/* 볼 터치 */}
+              <ellipse cx="32" cy="58" rx="5" ry="3" fill="#FFB6B6" opacity="0.6"/>
+              <ellipse cx="68" cy="58" rx="5" ry="3" fill="#FFB6B6" opacity="0.6"/>
+              {/* 간호사 모자 */}
+              <path d="M 25 35 Q 25 20 50 18 Q 75 20 75 35 L 72 40 L 28 40 Z" fill="white" stroke="#0d9488" strokeWidth="1.5"/>
+              <rect x="42" y="22" width="16" height="10" rx="2" fill="white" stroke="#0d9488" strokeWidth="1.5"/>
+              <path d="M 47 25 L 53 25 M 50 23 L 50 29" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+              {/* 머리카락 */}
+              <path d="M 28 40 Q 22 45 24 55" stroke="#4A3728" strokeWidth="3" fill="none" strokeLinecap="round"/>
+              <path d="M 72 40 Q 78 45 76 55" stroke="#4A3728" strokeWidth="3" fill="none" strokeLinecap="round"/>
+              {/* 눈 - 반짝반짝 */}
+              <ellipse cx="40" cy="52" rx="4" ry="5" fill="#2D2D2D"/>
+              <ellipse cx="60" cy="52" rx="4" ry="5" fill="#2D2D2D"/>
+              <circle cx="38" cy="50" r="1.5" fill="white"/>
+              <circle cx="58" cy="50" r="1.5" fill="white"/>
+              {/* 미소 */}
+              <path d="M 43 62 Q 50 68 57 62" stroke="#2D2D2D" strokeWidth="2" fill="none" strokeLinecap="round"/>
+              {/* 손 흔들기 */}
+              <ellipse cx="78" cy="70" rx="6" ry="8" fill="#FFE4C9" stroke="#E8C4A8" strokeWidth="1"/>
+              <path d="M 76 64 L 74 60 M 78 63 L 78 58 M 80 64 L 82 60" stroke="#FFE4C9" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
           </div>
+          {/* 반짝이 효과 */}
+          <div className="absolute -top-1 -right-1 text-lg animate-pulse">✨</div>
         </div>
         <h1 className="text-xl font-semibold text-gray-700 mb-1">
           {profile ? `${profile.name} 선생님, 안녕하세요!` : '안녕하세요!'}
@@ -156,7 +166,7 @@ export default function Dashboard() {
         </div>
         <Link href="/profile" className="bg-white p-4 rounded-xl border border-gray-100 hover:border-teal-300 transition-colors">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">🩺</span>
+            <span className="text-lg">👤</span>
             <span className="text-xs text-gray-500">내 프로필</span>
           </div>
           <p className="font-medium text-gray-800 truncate">{profile ? profile.name : '설정하기'}</p>
