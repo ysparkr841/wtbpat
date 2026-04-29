@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateBlogPost } from '@/lib/gemini';
+import { generateBlogPostWithCodex } from '@/lib/openai-codex';
+import { getServerUser } from '@/lib/server-auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,11 +23,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const content = await generateBlogPost(
-      { topic, monthlyEvent: monthlyEvent || '' },
-      profile,
-      model
-    );
+    let content: string;
+
+    const CODEX_MODEL_IDS = ['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.3-codex', 'gpt-5.3-codex-spark', 'gpt-5.2'];
+    if (CODEX_MODEL_IDS.includes(model)) {
+      const user = await getServerUser();
+      if (!user) {
+        return NextResponse.json({ success: false, error: '로그인이 필요합니다.' }, { status: 401 });
+      }
+      content = await generateBlogPostWithCodex(
+        { topic, monthlyEvent: monthlyEvent || '' },
+        profile,
+        user.id,
+        model
+      );
+    } else {
+      content = await generateBlogPost(
+        { topic, monthlyEvent: monthlyEvent || '' },
+        profile,
+        model
+      );
+    }
 
     return NextResponse.json({ success: true, data: { content } });
   } catch (error) {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Profile, WriteInput } from '@/types';
 import { GEMINI_MODELS, DEFAULT_MODEL } from '@/lib/gemini';
+import { CODEX_MODELS, DEFAULT_CODEX_MODEL } from '@/lib/openai-codex';
 
 const suggestedTopics = [
   { title: '환자 소통', desc: '효과적인 환자 상담 노하우' },
@@ -31,10 +32,12 @@ function WritePageContent() {
   const [copied, setCopied] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+  const [hasCodexToken, setHasCodexToken] = useState(false);
 
   useEffect(() => {
     fetchProfile();
     checkKakaoStatus();
+    checkCodexStatus();
 
     // URL 파라미터에서 topic 가져오기
     const topic = searchParams.get('topic');
@@ -55,6 +58,16 @@ function WritePageContent() {
     } finally {
       setProfileLoading(false);
     }
+  };
+
+  const checkCodexStatus = async () => {
+    try {
+      const res = await fetch('/api/codex-token/status');
+      if (res.ok) {
+        const data = await res.json();
+        setHasCodexToken(data.exists);
+      }
+    } catch {}
   };
 
   const checkKakaoStatus = async () => {
@@ -317,6 +330,21 @@ function WritePageContent() {
                     }`}
                   >
                     <p className={`text-xs font-semibold ${selectedModel === m.id ? 'text-teal-700' : 'text-gray-700'}`}>{m.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{m.desc}</p>
+                  </button>
+                ))}
+                {hasCodexToken && CODEX_MODELS.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedModel(m.id)}
+                    className={`p-2.5 rounded-lg border text-left transition-colors ${
+                      selectedModel === m.id
+                        ? 'border-green-400 bg-green-50'
+                        : 'border-gray-200 bg-gray-50 hover:bg-green-50'
+                    }`}
+                  >
+                    <p className={`text-xs font-semibold ${selectedModel === m.id ? 'text-green-700' : 'text-gray-700'}`}>{m.label}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{m.desc}</p>
                   </button>
                 ))}

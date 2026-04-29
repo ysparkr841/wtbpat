@@ -11,6 +11,13 @@ interface User {
   is_admin: boolean;
   created_at: string;
   avatar_url: string | null;
+  hasCodexToken?: boolean;
+}
+
+interface CodexTokenForm {
+  userId: string;
+  userName: string;
+  authJson: string;
 }
 
 export default function AdminPage() {
@@ -22,6 +29,8 @@ export default function AdminPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [codexForm, setCodexForm] = useState<CodexTokenForm | null>(null);
+  const [codexSaving, setCodexSaving] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: '',
@@ -45,7 +54,19 @@ export default function AdminPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.data || []);
+        const userList: User[] = data.data || [];
+
+        // ChatGPT 토큰 보유 여부 병렬 조회
+        const tokenStatuses = await Promise.all(
+          userList.map((u) =>
+            fetch(`/api/admin/codex-token?userId=${u.id}`)
+              .then((r) => r.json())
+              .then((r) => ({ id: u.id, exists: r.exists }))
+              .catch(() => ({ id: u.id, exists: false }))
+          )
+        );
+        const tokenMap = Object.fromEntries(tokenStatuses.map((s) => [s.id, s.exists]));
+        setUsers(userList.map((u) => ({ ...u, hasCodexToken: tokenMap[u.id] })));
         setIsAdmin(true);
       }
     } catch (error) {
@@ -133,6 +154,46 @@ export default function AdminPage() {
       }
     } catch (error) {
       setMessage({ type: 'error', text: '사용자 삭제 중 오류가 발생했습니다.' });
+    }
+  };
+
+  const handleSaveCodexToken = async () => {
+    if (!codexForm) return;
+    setCodexSaving(true);
+    try {
+      const res = await fetch('/api/admin/codex-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: codexForm.userId, authJson: codexForm.authJson }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: `${codexForm.userName}의 ChatGPT 토큰이 등록되었습니다.` });
+        setCodexForm(null);
+        checkAdminAndFetchUsers();
+      } else {
+        setMessage({ type: 'error', text: data.error || '토큰 저장에 실패했습니다.' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: '토큰 저장 중 오류가 발생했습니다.' });
+    } finally {
+      setCodexSaving(false);
+    }
+  };
+
+  const handleDeleteCodexToken = async (userId: string, userName: string) => {
+    if (!confirm(`"${userName}"의 ChatGPT 토큰을 삭제하시겠습니까?`)) return;
+    try {
+      const res = await fetch(`/api/admin/codex-token?userId=${userId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: '토큰이 삭제되었습니다.' });
+        checkAdminAndFetchUsers();
+      } else {
+        setMessage({ type: 'error', text: data.error || '삭제에 실패했습니다.' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: '삭제 중 오류가 발생했습니다.' });
     }
   };
 
@@ -308,6 +369,24 @@ export default function AdminPage() {
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-400">{formatDate(u.created_at)}</span>
                   <div className="flex items-center gap-2">
+                    {/* ChatGPT 토큰 관리 */}
+                    {u.hasCodexToken ? (
+                      <button
+                        onClick={() => handleDeleteCodexToken(u.id, u.name)}
+                        className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-red-100 hover:text-red-700 transition-colors"
+                        title="ChatGPT 토큰 삭제"
+                      >
+                        ChatGPT ✓
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setCodexForm({ userId: u.id, userName: u.name, authJson: '' })}
+                        className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-500 rounded-lg hover:bg-green-100 hover:text-green-700 transition-colors"
+                        title="ChatGPT 토큰 등록"
+                      >
+                        ChatGPT +
+                      </button>
+                    )}
                     {!u.is_admin && (
                       <button
                         onClick={() => handleChangePassword(u.id, u.name)}
@@ -337,6 +416,45 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      {/* ChatGPT 토큰 입력 모달 */}
+      {codexForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg shadow-xl">
+            <h3 className="font-bold text-gray-900 mb-1">ChatGPT 토큰 등록</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              <span className="font-medium text-gray-700">{codexForm.userName}</span> 계정에 연결할 auth.json 내용을 붙여넣어 주세요.
+            </p>
+            <div className="bg-gray-50 rounded-xl p-3 mb-4 text-xs text-gray-500 font-mono">
+              터미널에서 실행: <span className="text-teal-600 font-semibold">npx @openai/codex login</span><br />
+              생성된 파일 확인: <span className="text-teal-600">~/.codex/auth.json</span>
+            </div>
+            <textarea
+              value={codexForm.authJson}
+              onChange={(e) => setCodexForm({ ...codexForm, authJson: e.target.value })}
+              rows={8}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+              placeholder={'{\n  "tokens": {\n    "access_token": "...",\n    "refresh_token": "...",\n    "account_id": "..."\n  },\n  "last_refresh": "..."\n}'}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleSaveCodexToken}
+                disabled={codexSaving || !codexForm.authJson.trim()}
+                className="flex-1 py-2.5 bg-teal-500 text-white font-medium rounded-xl hover:bg-teal-600 disabled:opacity-50 transition-colors text-sm"
+              >
+                {codexSaving ? '저장 중...' : '저장하기'}
+              </button>
+              <button
+                onClick={() => setCodexForm(null)}
+                className="px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors text-sm"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
