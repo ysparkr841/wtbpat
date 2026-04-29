@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Profile, WriteInput } from '@/types';
+import { GEMINI_MODELS, DEFAULT_MODEL } from '@/lib/gemini';
 
 const suggestedTopics = [
   { title: '환자 소통', desc: '효과적인 환자 상담 노하우' },
@@ -29,6 +30,7 @@ function WritePageContent() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [step, setStep] = useState(1);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
 
   useEffect(() => {
     fetchProfile();
@@ -85,7 +87,7 @@ function WritePageContent() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...currentInput, profile }),
+        body: JSON.stringify({ ...currentInput, profile, model: selectedModel }),
       });
 
       const data = await response.json();
@@ -297,6 +299,28 @@ function WritePageContent() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all resize-none"
                 placeholder="예: 이번 달에 있었던 환자분과의 에피소드, 동료와의 협업 경험 등을 적어주시면 더 생생한 글이 됩니다."
               />
+            </div>
+
+            {/* 모델 선택 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">AI 모델 선택</label>
+              <div className="grid grid-cols-3 gap-2">
+                {GEMINI_MODELS.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedModel(m.id)}
+                    className={`p-2.5 rounded-lg border text-left transition-colors ${
+                      selectedModel === m.id
+                        ? 'border-teal-400 bg-teal-50'
+                        : 'border-gray-200 bg-gray-50 hover:bg-teal-50'
+                    }`}
+                  >
+                    <p className={`text-xs font-semibold ${selectedModel === m.id ? 'text-teal-700' : 'text-gray-700'}`}>{m.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{m.desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button

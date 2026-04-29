@@ -3,16 +3,24 @@ import { Profile, WriteInput } from '@/types';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+export const GEMINI_MODELS = [
+  { id: 'gemini-2.5-flash', label: 'Flash 2.5', desc: '균형 잡힌 성능' },
+  { id: 'gemini-2.5-flash-lite', label: 'Flash 2.5 Lite', desc: '빠르고 안정적' },
+  { id: 'gemini-2.5-pro', label: 'Pro 2.5', desc: '최고 품질' },
+];
+
+export const DEFAULT_MODEL = 'gemini-2.5-flash';
+
 export async function generateBlogPost(
   input: WriteInput,
-  profile: Profile
+  profile: Profile,
+  modelId: string = DEFAULT_MODEL
 ): Promise<string> {
-  // API 키 확인
   if (!process.env.GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY 환경변수가 설정되지 않았습니다.');
   }
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = genAI.getGenerativeModel({ model: modelId });
 
   // 현재 날짜 정보 생성
   const now = new Date();
