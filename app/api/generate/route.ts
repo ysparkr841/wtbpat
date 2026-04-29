@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { topic, monthlyEvent, profile, model } = body;
+    const { topic, monthlyEvent, profile, model, charCount } = body;
 
     if (!topic) {
       return NextResponse.json(
@@ -35,13 +35,15 @@ export async function POST(request: NextRequest) {
         { topic, monthlyEvent: monthlyEvent || '' },
         profile,
         user.id,
-        model
+        model,
+        charCount
       );
     } else {
       content = await generateBlogPost(
         { topic, monthlyEvent: monthlyEvent || '' },
         profile,
-        model
+        model,
+        charCount
       );
     }
 

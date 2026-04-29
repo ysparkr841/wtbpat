@@ -94,7 +94,8 @@ export async function generateBlogPostWithCodex(
   input: WriteInput,
   profile: Profile,
   userId: string,
-  modelId: string = DEFAULT_CODEX_MODEL
+  modelId: string = DEFAULT_CODEX_MODEL,
+  charCount: string = '1500~2000'
 ): Promise<string> {
   const authData = await getAndRefreshToken(userId);
   const { access_token, account_id } = authData.tokens;
@@ -117,9 +118,11 @@ export async function generateBlogPostWithCodex(
 1. ${profile.blog_style || '친근하고 따뜻한 말투'}의 말투와 스타일을 유지하세요.
 2. 전문성과 진정성이 느껴지는 글로 작성하세요.
 3. 적절한 소제목을 사용해 가독성을 높이세요.
-4. 글 길이는 1500~2000자 정도로 작성하세요.
+4. 글 길이는 ${charCount}자 정도로 작성하세요. 이 글자 수를 반드시 지켜주세요.
 5. 네이버 블로그에 바로 붙여넣기 할 수 있는 형식으로 작성하세요.
-6. 현재 계절(${season})에 맞는 인사말로 시작하세요.`;
+6. 현재 날짜(${now.getFullYear()}년 ${month}월)와 계절(${season})을 반드시 인지하고 글의 맥락에 자연스럽게 반영하세요. 단, 날씨나 계절 인사로 글을 시작할 필요는 없습니다.
+7. 마크다운 문법(#, ##, **, *, -, > 등)을 절대 사용하지 마세요. 소제목은 줄바꿈과 일반 텍스트로만 표현하세요.
+8. AI가 쓴 느낌이 나지 않도록 자연스럽고 사람이 직접 쓴 것처럼 작성하세요. 과도한 나열식 문장, 틀에 박힌 표현, 지나치게 정형화된 구조는 피하세요.`;
 
   const prompt = `오늘 날짜: ${now.getFullYear()}년 ${month}월 ${now.getDate()}일 (${season})
 
